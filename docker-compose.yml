@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  db_books:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: mydatabase
+    volumes:
+      - postgres_data_books:/var/lib/postgresql/data
+    networks:
+      - mynetwork
+
+  db_users:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: mydatabase
+    volumes:
+      - postgres_data_users:/var/lib/postgresql/data
+    networks:
+      - mynetwork
+
+  db_orders:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: mydatabase
+    volumes:
+      - postgres_data_orders:/var/lib/postgresql/data
+    networks:
+      - mynetwork
+
+  books_service:
+    build: ./books_service
+    ports:
+      - "5001:5001"
+    environment:
+      DATABASE_URL: postgresql://myuser:mypassword@db_books:5432/mydatabase
+    depends_on:
+      - db_books
+    networks:
+      - mynetwork
+
+  users_service:
+    build: ./users_service
+    ports:
+      - "5002:5002"
+    environment:
+      DATABASE_URL: postgresql://myuser:mypassword@db_users:5432/mydatabase
+    depends_on:
+      - db_users
+    networks:
+      - mynetwork
+
+  orders_service:
+    build: ./orders_service
+    ports:
+      - "5003:5003"
+    environment:
+      DATABASE_URL: postgresql://myuser:mypassword@db_orders:5432/mydatabase
+    depends_on:
+      - db_orders
+    networks:
+      - mynetwork
+
+  nginx:
+    build: .
+    ports:
+      - "8082:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - books_service
+      - users_service
+      - orders_service
+    networks:
+      - mynetwork
+
+networks:
+  mynetwork:
+    driver: bridge
+
+volumes:
+  postgres_data_books:
+  postgres_data_users:
+  postgres_data_orders:
